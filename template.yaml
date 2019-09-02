@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  aws-cloudformation-logs-to-slack
+
+  SAM Template for aws-cloudformation-logs-to-slack
+
+Globals:
+  Function:
+    Timeout: 3
+
+Parameters:
+  SNSTopicRegion:
+      Description: Please enter the region for the SNS Topic
+      Type: String
+      Default: ap-southeast-2
+
+Resources:
+  CFLogsToSlackFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: cloudformation_logs_to_slack/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Events:
+        CFLogsToSlack:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNSTopicForCloudFormation
+            Region: !Ref SNSTopicRegion
+      Environment:
+        Variables:
+          SLACK_WEBHOOK: UPDATE_ME
+  
+  SNSTopicForCloudFormation:
+    Type: AWS::SNS::Topic
+    Properties: 
+      DisplayName: sns-cloudformation
+      Subscription: 
+        - Endpoint: !GetAtt CFLogsToSlackFunction.Arn
+          Protocol: lambda
+      TopicName: sns-cloudformation
+
+Outputs:
+  CloudFormationLogsToSlackFunction:
+    Description: "CFLogsToSlackFunction Lambda Function ARN"
+    Value: !GetAtt CFLogsToSlackFunction.Arn
+  CloudFormationLogsToSlackFunctionIamRole:
+    Description: "Implicit IAM Role created for Lambda function"
+    Value: !GetAtt CFLogsToSlackFunctionRole.Arn
+  CloudFormationLogsToSlackFunctionSnsTopic:
+    Description: "SNS Topic created for the Lambda function"
+    Value: !Ref SNSTopicForCloudFormation
